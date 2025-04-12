@@ -107,9 +107,14 @@ describe("vault", () => {
         }).rpc();
 
       console.log("Withdrawal transaction signature: ", tx);
+      console.log("Initial Vault Balance: ", initialVaultBalance);
+      console.log("Initial User Balance: ", initialUserBalance);
 
       const updatedUserBalance = await provider.connection.getBalance(user.publicKey);
       const updatedVaultBalance = await provider.connection.getBalance(vaultPDA);
+
+      console.log("Updated Vault Balance: ", updatedVaultBalance);
+      console.log("Updated User Balance: ", updatedUserBalance);
 
       expect(updatedUserBalance).to.be.greaterThan(initialUserBalance);
       expect(updatedVaultBalance).to.equal(0);
@@ -125,14 +130,43 @@ describe("vault", () => {
   });
 
   it("Close the vault", async () => {
+    // Get balances before closing
+    const initialUserBalance = await provider.connection.getBalance(user.publicKey);
+    const initialVaultBalance = await provider.connection.getBalance(vaultPDA);
 
+    // Close the vault
     const tx = await vaultProgram.methods.closeVault().accounts({
       user: user.publicKey,
       vaultState: vaultStatePDA,
       vault: vaultPDA,
       systemProgram: anchor.web3.SystemProgram.programId
-    })
+    }).rpc();
 
-    
+    console.log("Close vault transaction signature:", tx);
+    console.log("Initial Vault Balance: ", initialVaultBalance);
+    console.log("Initial User Balance: ", initialUserBalance);
+
+    // Get updated balances
+    const updatedUserBalance = await provider.connection.getBalance(user.publicKey);
+    const updatedVaultBalance = await provider.connection.getBalance(vaultPDA);
+
+    console.log("Updated Vault Balance: ", updatedVaultBalance);
+    console.log("Updated User Balance: ", updatedUserBalance);
+
+    // Verify the user received back funds (minus transaction fee)
+    expect(updatedUserBalance).to.be.greaterThan(initialUserBalance - 10000); // Account for tx fee
+
+    // Verify vault balance is zero
+    expect(updatedVaultBalance).to.equal(0);
+
+    // Verify vault_state account no longer exists
+    try {
+      await vaultProgram.account.vaultState.fetch(vaultStatePDA);
+      // If we get here, the account still exists, which is unexpected
+      expect.fail("Vault state account should be closed");
+    } catch (error) {
+      // This is expected - account should be closed and not found
+      expect(error.toString()).to.include("Account does not exist");
+    }
   })
 });
