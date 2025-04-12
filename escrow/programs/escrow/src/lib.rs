@@ -13,8 +13,9 @@ declare_id!("7RwCakEJihTYJDvpQHkBnXZBuTgX9x51Wrg5Ut4DMRxm");
 pub mod escrow {
     use super::*;
 
-    
-
+    pub fn make(ctx: Context<Make>, seed: u64, deposit: u64, receive: u64) -> Result<()> {
+      ctx.accounts.deposit()
+    }
 
 }
 

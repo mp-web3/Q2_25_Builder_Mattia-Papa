@@ -5,7 +5,7 @@ use crate::state::Escrow;
 
 
 #[derive(Accounts)]
-#[instruction()]
+#[instruction(seed: u64)] // This takes the instruction arguments and makes it available 
 pub struct Make <'info> {
     #[account(mut)]
     pub maker: Signer<'info>,
@@ -22,7 +22,7 @@ pub struct Make <'info> {
 
     #[account(
         mut,
-        associated_token::mint_a,
+        associated_token::mint = mint_a,
         associated_token::authority = maker,
         associated_token::token_program = token_program
     )]
@@ -40,7 +40,7 @@ pub struct Make <'info> {
     #[account(
         init,
         payer = maker,
-        associated_token::mint_a,
+        associated_token::mint = mint_a,
         associated_token::authority = escrow,
         associated_token::token_program = token_program
         
@@ -63,7 +63,8 @@ impl<'info> Make<'info> {
             mint_b: self.mint_b.key(),
             receive,
             bump: bumps.escrow,
-        })
+        });
+        Ok(())
     }
 }
 
@@ -76,6 +77,6 @@ pub fn deposit(&mut self, deposit: u64) -> Result<()> {
         authority: self.maker.to_account_info()
 
     };
-
-    Ok(())
+    let cpi_ctx = CpiContext::new(cpi_program, transfer_accounts);
+    transfer_checked(cpi_ctx, deposit, self.mint_a.decimals)
 }
