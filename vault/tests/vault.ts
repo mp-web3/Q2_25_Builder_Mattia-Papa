@@ -88,4 +88,51 @@ describe("vault", () => {
       throw error;
     }
   });
+
+  it("Withdraw funds from the vault", async () => {
+    const initialUserBalance = await provider.connection.getBalance(user.publicKey);
+    const initialVaultBalance = await provider.connection.getBalance(vaultPDA);
+
+    const withdrawalAmount = initialVaultBalance;
+
+    try {
+      // Create Withdraw instructions
+      const tx = await vaultProgram.methods
+        .withdraw(new anchor.BN(withdrawalAmount))
+        .accounts({
+          user: user.publicKey,
+          vaultState: vaultStatePDA,
+          vault: vaultPDA,
+          systemProgram: anchor.web3.SystemProgram.programId,
+        }).rpc();
+
+      console.log("Withdrawal transaction signature: ", tx);
+
+      const updatedUserBalance = await provider.connection.getBalance(user.publicKey);
+      const updatedVaultBalance = await provider.connection.getBalance(vaultPDA);
+
+      expect(updatedUserBalance).to.be.greaterThan(initialUserBalance);
+      expect(updatedVaultBalance).to.equal(0);
+
+    } catch (error) {
+      console.error("Error during withdrawal:", error);
+      // If there are logs available, print them for debugging
+      if (error.logs) {
+        console.error("Transaction logs:", error.logs);
+      }
+      throw error;
+    }
+  });
+
+  it("Close the vault", async () => {
+
+    const tx = await vaultProgram.methods.closeVault().accounts({
+      user: user.publicKey,
+      vaultState: vaultStatePDA,
+      vault: vaultPDA,
+      systemProgram: anchor.web3.SystemProgram.programId
+    })
+
+    
+  })
 });
