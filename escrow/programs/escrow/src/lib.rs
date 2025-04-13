@@ -29,11 +29,16 @@ pub mod escrow {
         ctx.accounts.deposit(deposit)
     }
 
-    // TODO: Add the 'take' instruction
     // This instruction will allow a taker to accept the trade and complete the escrow
+    pub fn take(ctx: Context<Take>, _seed: u64) -> Result<()> {
+        ctx.accounts.execute_trade()
+    }
 
     // TODO: Add the 'refund' instruction
     // This instruction will allow the maker to reclaim their tokens if no taker accepts
+    pub fn refund(ctx: Context<Refund>) -> Result<()> {
+        ctx.accounts.refund_and_close_vault()
+    }
 }
 
 // ===== EXAMPLE ACCOUNT STRUCTURES =====
