@@ -22,7 +22,6 @@ pub struct Initialize <'info> {
         mint::decimals = 6,
         mint::authority = config
     )]
-
     pub mint_lp: Account<'info, Mint>,
 
     // In this case we don't want to support interface, but only token '2022'
