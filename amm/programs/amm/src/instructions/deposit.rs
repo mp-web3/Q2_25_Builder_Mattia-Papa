@@ -1,11 +1,10 @@
+use crate::{error::AmmError, state::Config};
 use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
     token::{mint_to, transfer, Mint, MintTo, Token, TokenAccount, Transfer},
 };
-use crate::{error::AmmError, state::Config};
 use constant_product_curve::ConstantProduct;
-
 
 #[derive(Accounts)]
 pub struct Deposit<'info> {
@@ -44,7 +43,7 @@ pub struct Deposit<'info> {
         associated_token::authority = config,
     )]
     pub vault_y: Account<'info, TokenAccount>,
-    
+
     #[account(
         mut,
         associated_token::mint = mint_x,
@@ -65,18 +64,19 @@ pub struct Deposit<'info> {
     )]
     pub user_lp: Account<'info, TokenAccount>,
 
-    pub token_program: Program<'info, Config>,
+    pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
-
 }
 
 impl<'info> Deposit<'info> {
-
     pub fn deposit(&mut self, amount: u64, max_x: u64, max_y: u64) -> Result<()> {
         require!(self.config.locked == false, AmmError::PoolLocked);
         require!(amount != 0, AmmError::InvalidAmount);
-        let (x, y) = match self.mint_lp.supply == 0 && self.vault_x.amount == 0 && self.vault_y.amount == 0 {
+        let (x, y) = match self.mint_lp.supply == 0
+            && self.vault_x.amount == 0
+            && self.vault_y.amount == 0
+        {
             true => (max_x, max_y),
             false => {
                 let amounts = ConstantProduct::xy_withdraw_amounts_from_l(
@@ -84,10 +84,10 @@ impl<'info> Deposit<'info> {
                     self.vault_y.amount,
                     self.mint_lp.supply,
                     amount,
-                    0
+                    0,
                 )
                 .unwrap();
-            (amounts.x, amounts.y)
+                (amounts.x, amounts.y)
             }
         };
 
@@ -101,10 +101,14 @@ impl<'info> Deposit<'info> {
 
     pub fn deposit_tokens(&mut self, is_x: bool, amount: u64) -> Result<()> {
         let (from, to) = match is_x {
-            true => (self.user_x.to_account_info(), self.vault_x.to_account_info()),
-            false => (self.user_y.to_account_info(), self.vault_y.to_account_info()),
-
-
+            true => (
+                self.user_x.to_account_info(),
+                self.vault_x.to_account_info(),
+            ),
+            false => (
+                self.user_y.to_account_info(),
+                self.vault_y.to_account_info(),
+            ),
         };
 
         let cpi_program = self.token_program.to_account_info();
