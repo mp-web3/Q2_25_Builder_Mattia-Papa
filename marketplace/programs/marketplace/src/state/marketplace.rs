@@ -20,7 +20,7 @@ pub struct Marketplace {
 
     /// PDA bump seed for the treasury account
     /// The treasury collects fees from all sales
-    pub_treasury_bump: u8, // where fees go. Is a PDA
+    pub treasury_bump: u8, // where fees go. Is a PDA
 
     /// Name of the marketplace
     /// Used in PDA derivation and for identification

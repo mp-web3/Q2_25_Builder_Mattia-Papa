@@ -1,8 +1,8 @@
 use crate::state::{marketplace::Marketplace, listing::Listing};
+use crate::error::MarketplaceError;
 use anchor_lang::{prelude::*, system_program::{Transfer, transfer}};
 use anchor_spl::{
     associated_token::AssociatedToken,
-    metadata::{MasterEditionAccount, Metadata, MetadataAccount},
     token::{transfer_checked, TransferChecked},
     token_interface::{Mint, TokenAccount, TokenInterface},
 };
@@ -104,12 +104,12 @@ impl<'info> Purchase<'info> {
     /// Calculates fee and splits payment appropriately
     pub fn send_sol(&mut self) -> Result<()> {
         // Calculate the marketplace fee based on listing price and fee percentage
-        // TODO! Change unwrap with proper error messages, like overflow, underflow etc...
+        // Convert fee percentage from basis points (1/100 of 1%) to a proper multiplier
         let marketplace_fee: u64 = (self.marketplace.fee as u64)
             .checked_mul(self.listing.price)
-            .unwrap()
+            .ok_or(MarketplaceError::Overflow)?  // Handle multiplication overflow
             .checked_div(10000_u64)
-            .unwrap();
+            .ok_or(MarketplaceError::Underflow)?;  // Handle division underflow (unlikely with constant divisor)
 
         // Set up payment to seller (price minus marketplace fee)
         let cpi_program = self.system_program.to_account_info();
@@ -120,7 +120,9 @@ impl<'info> Purchase<'info> {
         let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
 
         // Calculate amount to send to seller (price minus fee)
-        let amount: u64 = self.listing.price.checked_sub(marketplace_fee).unwrap();
+        let amount: u64 = self.listing.price
+            .checked_sub(marketplace_fee)
+            .ok_or(MarketplaceError::Underflow)?;
         
         // Transfer SOL to seller
         transfer(cpi_ctx, amount)?;
@@ -151,10 +153,14 @@ impl<'info> Purchase<'info> {
             authority: self.listing.to_account_info(),
         };
 
+        // Store keys in variables to prevent temporary value dropped errors
+        let marketplace_key = self.marketplace.key();
+        let maker_mint_key = self.maker_mint.key();
+        
         // Create signer seeds for the listing PDA
         let seeds = &[
-            self.marketplace.key().as_ref(),
-            self.maker_mint.key().as_ref(),
+            marketplace_key.as_ref(),
+            maker_mint_key.as_ref(),
             &[self.listing.bump],
         ];
         let signer_seeds = &[&seeds[..]];

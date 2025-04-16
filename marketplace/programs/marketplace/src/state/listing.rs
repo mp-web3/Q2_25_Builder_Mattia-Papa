@@ -11,7 +11,7 @@ pub struct Listing {
 
     /// The mint address of the NFT being listed
     /// This uniquely identifies the NFT asset
-    pub maker_mint: Pubkey, //NFT that is going to be listed on the marketplace by the Maker
+    pub maker_mint: Pubkey, // NFT that is going to be listed on the marketplace by the Maker
 
     /// The sale price in lamports (SOL)
     pub price: u64,
