@@ -19,4 +19,5 @@ idl-build = ["anchor-lang/idl-build"]
 
 [dependencies]
 anchor-lang = "0.31.0"
+mpl-core = { version = "0.9.1", features = ["anchor"] }
 
